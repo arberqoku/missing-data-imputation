@@ -1,0 +1,29 @@
+General topic: different methods used in medicine to handle missing data
+
+Related work section: some case example, techniques used:
+- Listwise deletion (adds bias for MNAR / MAR)
+- Mean substitution, person mean substitution at two levels, regression imputation, hot-deck imputation
+- comparison of hot-deck and Multiple Imputation (MICE package) => MICE wins
+- ML-based methods: Multi-layer-perceptron, kNN, self-organising maps, decision trees - in different case studies different methods rank most highly
+
+This work: focusses on mean, hot-deck, MI, MLP, SOM, KNN 
+Data set: about breast cancer (5.61% missing entries, roughly half of the observations have something missing) - note: authors say data is MAR
+measure: AUC value for predictions obtained by using neural network on the processed data
+
+Methods
+mean imputation: just use mean, duh
+hot-deck: uses the value of a similar observation (this doesn't add a bias). Similar observation is found by some distance metric
+multiple imputation: compile several complete datasets (here: 5) and run analysis on them. Results are combined in a special way in order to obtain error estimates. They tested multiple ways to do the imputation itself (Amelia II, WinMICE - regression imputation, SAS - some MCMC method similar to expectation maximization (?))
+MLP: dense, 2-layer NN. Build a NN for every combination of missing data in the dataset -> lots of models
+SOM: also a neural network, where nodes have fixed positions on a 2D grid. I didn't understand training, but the missing data is predicted by assigning the same values as in the Best Matching Unit -> similar to hot-deck, but different way of obtaining closest observation
+kNN: find k nearest neighbors according to some metric, use their mean (continuous covariate) or mode (categorical) to estimate missing values - weights can also be used
+
+Experiment: run some Matlab code on a cluster of 25 Pentium IV 2.0 MHz PCs XD
+
+Results: 
+hot-deck sucked
+mean, SAS, Amelia, MICE - mild improvements
+MLP / KNN / SOM - big improvements
+
+
+Remark: paper feels a bit outdated?
