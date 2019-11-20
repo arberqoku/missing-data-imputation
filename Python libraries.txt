@@ -1,0 +1,62 @@
+Libraries: impyute, fancyimpute, autoimpute, missingpy, sklearn
+
+Methods:
+
+complete-case analysis: 
+
+import pandas as pd
+dataFrame = pd.read_csv("Data.csv")
+dataFrame.dropna()
+
+mean imputation (strategy=median, most_frequent are also possible):
+
+from sklearn.preprocessing import Imputer
+imputer = Imputer(missing_values="NaN", strategy="mean", axis = 0)
+imputer = imputer.fit(trainingData[:, 1:2])
+dataset[:, 1:2] = imputer.transform(dataset[:, 1:2])
+
+
+hot-deck:
+
+didn't find any implementations. Is it the same as kNN with k=1?
+
+kNN:
+
+from fancyimpute import KNN
+
+# X is the complete data matrix
+# X_incomplete has the same values as X except a subset have been replace with NaN
+
+# Use 3 nearest rows which have a feature to fill in each row's missing features
+X_filled_knn = KNN(k=3).fit_transform(X_incomplete)
+
+MICE:
+
+deprecated from fancyimpute a IterativeImputer and moved into sklearn
+
+import numpy as np
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
+
+X_train = [[1, 2],
+           [3, 6],
+           [4, 8],
+           [np.nan, 3],
+           [7, np.nan]]
+X_test = [[np.nan, 2],
+          [np.nan, np.nan],
+          [np.nan, 6]]
+
+for i in range(3):
+    imp = IterativeImputer(max_iter=10, random_state=i, sample_posterior=True)
+    imp.fit(X_train)
+    print(f"imputation {i}:")
+    print(np.round(imp.transform(X_test)))
+
+somehow we have to do the "multiple" part ourselves?!
+
+
+datawig: Deep Learning Thingy
+
+https://dl.acm.org/citation.cfm?id=3272005
+
