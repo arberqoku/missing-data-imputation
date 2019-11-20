@@ -140,10 +140,6 @@ if __name__ == "__main__":
     print("Train random forest classifier")
     clf = train(X_train, y_train)
 
-    print("Predict test data")
-    y_pred = clf.predict(X_test)
-    print("Model accuracy: %s" % clf.score(X_test, y_test))
-
     missing_fracs = np.linspace(0.1, 0.9, 9)
     impute_params = [
         ("complete_case", {}),
@@ -155,7 +151,13 @@ if __name__ == "__main__":
         ("mice", {}),
     ]
 
-    results = {"missing_frac": [], "strategy": [], "accuracy": []}
+    results = {
+        "missing_frac": [0],
+        "strategy": ["no_imputation"],
+        "accuracy": [clf.score(X_test, y_test)],
+    }
+
+    print("Evaluating different imputation methods wrt model accuracy")
 
     for missing_frac in missing_fracs:
         for (impute_strategy, impute_param) in impute_params:
