@@ -33,7 +33,7 @@ import seaborn as sns
 
 # plot styling
 sns.set_context("talk")
-sns.set_style("darkgrid")
+sns.set_style("darkgrid", {"legend.frameon": True})
 
 
 def load_data():
@@ -70,12 +70,34 @@ def evaluate():
     pass
 
 
-def plot():
-    pass
-
-
 def compare_models():
     pass
+
+
+def feature_col_vs_metric_score(
+    results_df,
+    feature_col="missing_frac",
+    metric_score="accuracy",
+    group_col="strategy",
+):
+    """
+    How does each model perform based on a single feature (averaged across other relevant features) wrt a metric score
+    :param group_col:
+    :param results_df:
+    :param feature_col:
+    :param metric_score:
+    :return:
+    """
+    # TODO: show white background for legend
+    return sns.lineplot(
+        x=feature_col,
+        y=metric_score,
+        hue=group_col,
+        style=group_col,
+        markers=True,
+        dashes=False,
+        data=results_df,
+    )
 
 
 # introduce missingness
@@ -140,7 +162,8 @@ if __name__ == "__main__":
     print("Train random forest classifier")
     clf = train(X_train, y_train)
 
-    missing_fracs = np.linspace(0.1, 0.9, 9)
+    reps = 5
+    missing_fracs = np.linspace(0.0, 0.9, 10)
     impute_params = [
         ("complete_case", {}),
         ("mean", {}),
@@ -151,39 +174,38 @@ if __name__ == "__main__":
         ("mice", {}),
     ]
 
-    results = {
-        "missing_frac": [0],
-        "strategy": ["no_imputation"],
-        "accuracy": [clf.score(X_test, y_test)],
-    }
+    results = {"exp_rep": [], "missing_frac": [], "strategy": [], "accuracy": []}
 
     print("Evaluating different imputation methods wrt model accuracy")
 
-    for missing_frac in missing_fracs:
-        for (impute_strategy, impute_param) in impute_params:
-            print(
-                "Introduce %s%% missingness in every column" % int(missing_frac * 100)
-            )
-            X_train_miss = delete_datapoints(X_train, frac=missing_frac)
+    for rep in range(reps):
+        for missing_frac in missing_fracs:
+            for (impute_strategy, impute_param) in impute_params:
+                print(
+                    "Introduce %s%% missingness in every column"
+                    % int(missing_frac * 100)
+                )
+                X_train_miss = delete_datapoints(X_train, frac=missing_frac)
 
-            print("Impute missing data using %s strategy" % impute_strategy)
-            X_train_imputed = impute_data(
-                X_train_miss, strategy=impute_strategy, **impute_param
-            )
-            y_train_imputed = y_train.loc[X_train_imputed.index]
+                print("Impute missing data using %s strategy" % impute_strategy)
+                X_train_imputed = impute_data(
+                    X_train_miss, strategy=impute_strategy, **impute_param
+                )
+                y_train_imputed = y_train.loc[X_train_imputed.index]
 
-            print("Retrain random forest classifier on imputed data")
-            try:
-                clf_imputed = train(X_train_imputed, y_train_imputed)
-                clf_accuracy = clf_imputed.score(X_test, y_test)
-            except ValueError as e:
-                print(e)
-                clf_accuracy = 0
-            print("Model accuracy: %s" % clf_accuracy)
+                print("Retrain random forest classifier on imputed data")
+                try:
+                    clf_imputed = train(X_train_imputed, y_train_imputed)
+                    clf_accuracy = clf_imputed.score(X_test, y_test)
+                except ValueError as e:
+                    print(e)
+                    clf_accuracy = 0
+                print("Model accuracy: %s" % clf_accuracy)
 
-            results["missing_frac"].append(missing_frac)
-            results["strategy"].append(impute_strategy)
-            results["accuracy"].append(clf_accuracy)
+                results["exp_rep"].append(rep)
+                results["missing_frac"].append(missing_frac)
+                results["strategy"].append(impute_strategy)
+                results["accuracy"].append(clf_accuracy)
 
     results_df = pd.DataFrame(results)
 
@@ -194,3 +216,6 @@ if __name__ == "__main__":
     print(results_df.sort_values(by=["accuracy"], ascending=False))
     pd.reset_option("display.max_rows")
     pd.reset_option("display.max_columns")
+
+    feature_col_vs_metric_score(results_df)
+    plt.show()
