@@ -122,7 +122,7 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
             missing_values=np.NaN, strategy="constant", fill_value=0
         ),
         "hot-deck": lambda: None,
-        "knn": lambda: KNN(k=3),
+        "knn": lambda: KNN(**strategy_kwargs),
         "mice": lambda: IterativeImputer(
             max_iter=10, sample_posterior=True, **strategy_kwargs
         ),
@@ -162,6 +162,7 @@ def experiment(
     print("Split into train and validation set")
 
     # TODO: same split for all repetitions? or resplit?
+    #  Better: use CV
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.33, stratify=y
     )
@@ -216,12 +217,15 @@ if __name__ == "__main__":
     X = pd.DataFrame(pre_process(X, y), columns=X.columns)
     print("Features:\n%s" % X)
 
+    missing_fracs = np.linspace(0.0, 0.9, 10)
+
     results_df = experiment(
         X,
         y,
         model=RandomForestClassifier(n_estimators=10, n_jobs=2),
         metric=metrics.accuracy_score,
         reps=3,
+        missing_fracs=missing_fracs,
     )
 
     # show all results
@@ -233,4 +237,6 @@ if __name__ == "__main__":
     pd.reset_option("display.max_columns")
 
     feature_col_vs_metric_score(results_df)
+    plt.gca().set_ylim(bottom=0)
+    plt.xticks(missing_fracs)
     plt.show()
