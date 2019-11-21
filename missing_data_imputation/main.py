@@ -17,6 +17,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn import metrics
 
 
 # imputation
@@ -55,17 +56,6 @@ def pre_process(X, y):
     return scaler.fit_transform(X, y)
 
 
-# train_test_split
-def split_data(X, y, test_size=0.25, **kwargs):
-    return train_test_split(X, y, test_size=test_size, stratify=y, **kwargs)
-
-
-def train(X, y):
-    clf = RandomForestClassifier(n_estimators=10, n_jobs=2)
-    clf.fit(X, y)
-    return clf
-
-
 def evaluate():
     pass
 
@@ -77,7 +67,7 @@ def compare_models():
 def feature_col_vs_metric_score(
     results_df,
     feature_col="missing_frac",
-    metric_score="accuracy",
+    metric_score="metric_score",
     group_col="strategy",
 ):
     """
@@ -117,6 +107,7 @@ def delete_datapoints(X, columns=None, frac=0.1):
 def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
     _X = X.copy(deep=True)
 
+    # TODO: complete case is no imputation strategy...
     if strategy == "complete_case":
         return _X.dropna()
 
@@ -146,6 +137,75 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
     return _X
 
 
+def experiment(
+    X, y, model=None, metric=None, reps=3, missing_fracs=None, impute_params=None
+):
+
+    if missing_fracs is None:
+        missing_fracs = np.linspace(0.0, 0.9, 10)
+
+    if impute_params is None:
+        impute_params = [
+            ("complete_case", {}),
+            ("mean", {}),
+            ("median", {}),
+            ("most_frequent", {}),
+            ("zero", {}),
+            # TODO: problem if user wants to try different knn (with different k)
+            #  => store strategy and some indicator!
+            ("knn", {"fill_method": "mean", "k": 3}),
+            ("mice", {}),
+        ]
+
+    results = {"exp_rep": [], "missing_frac": [], "strategy": [], "metric_score": []}
+
+    print("Split into train and validation set")
+
+    # TODO: same split for all repetitions? or resplit?
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.33, stratify=y
+    )
+
+    print("Evaluating different imputation methods w.r.t. model accuracy")
+
+    for rep in range(reps):
+        print("\n\n========== Experiment instance %s ==========" % rep)
+        for missing_frac in missing_fracs:
+            print(
+                "\n========== Missing percentage %s%% =========="
+                % int(missing_frac * 100)
+            )
+            for (impute_strategy, impute_param) in impute_params:
+                print("========== Imputation strategy %s ==========" % impute_strategy)
+
+                X_train_miss = delete_datapoints(X_train, frac=missing_frac)
+                X_train_imputed = impute_data(
+                    X_train_miss, strategy=impute_strategy, **impute_param
+                )
+                y_train_imputed = y_train.loc[X_train_imputed.index]
+
+                # print("Retrain model on imputed data")
+                try:
+                    model.fit(X_train_imputed, y_train_imputed)
+                    # make use of metric
+                    y_pred = model.predict(X_test)
+                    metric_score = metric(y_test, y_pred)
+                except ValueError as e:
+                    print(
+                        "Could not train model or compute accuracy. Continue to next training instance."
+                    )
+                    print(e)
+                    continue
+                # print("Metric score: %s" % metric_score)
+
+                results["exp_rep"].append(rep)
+                results["missing_frac"].append(missing_frac)
+                results["strategy"].append(impute_strategy)
+                results["metric_score"].append(metric_score)
+
+    return pd.DataFrame(results)
+
+
 if __name__ == "__main__":
     print("Load data")
     X, y = load_data()
@@ -156,64 +216,19 @@ if __name__ == "__main__":
     X = pd.DataFrame(pre_process(X, y), columns=X.columns)
     print("Features:\n%s" % X)
 
-    print("Split data into train and test")
-    X_train, X_test, y_train, y_test = split_data(X, y, test_size=0.25)
-
-    print("Train random forest classifier")
-    clf = train(X_train, y_train)
-
-    reps = 5
-    missing_fracs = np.linspace(0.0, 0.9, 10)
-    impute_params = [
-        ("complete_case", {}),
-        ("mean", {}),
-        ("median", {}),
-        ("most_frequent", {}),
-        ("zero", {}),
-        ("knn", {"fill_method": "mean", "k": 3}),
-        ("mice", {}),
-    ]
-
-    results = {"exp_rep": [], "missing_frac": [], "strategy": [], "accuracy": []}
-
-    print("Evaluating different imputation methods wrt model accuracy")
-
-    for rep in range(reps):
-        for missing_frac in missing_fracs:
-            for (impute_strategy, impute_param) in impute_params:
-                print(
-                    "Introduce %s%% missingness in every column"
-                    % int(missing_frac * 100)
-                )
-                X_train_miss = delete_datapoints(X_train, frac=missing_frac)
-
-                print("Impute missing data using %s strategy" % impute_strategy)
-                X_train_imputed = impute_data(
-                    X_train_miss, strategy=impute_strategy, **impute_param
-                )
-                y_train_imputed = y_train.loc[X_train_imputed.index]
-
-                print("Retrain random forest classifier on imputed data")
-                try:
-                    clf_imputed = train(X_train_imputed, y_train_imputed)
-                    clf_accuracy = clf_imputed.score(X_test, y_test)
-                except ValueError as e:
-                    print(e)
-                    clf_accuracy = 0
-                print("Model accuracy: %s" % clf_accuracy)
-
-                results["exp_rep"].append(rep)
-                results["missing_frac"].append(missing_frac)
-                results["strategy"].append(impute_strategy)
-                results["accuracy"].append(clf_accuracy)
-
-    results_df = pd.DataFrame(results)
+    results_df = experiment(
+        X,
+        y,
+        model=RandomForestClassifier(n_estimators=10, n_jobs=2),
+        metric=metrics.accuracy_score,
+        reps=3,
+    )
 
     # show all results
     # complete_case should be in the end
     pd.set_option("display.max_rows", results_df.shape[0])
     pd.set_option("display.max_columns", results_df.shape[1])
-    print(results_df.sort_values(by=["accuracy"], ascending=False))
+    print(results_df.sort_values(by=["metric_score"], ascending=False))
     pd.reset_option("display.max_rows")
     pd.reset_option("display.max_columns")
 
