@@ -16,6 +16,7 @@ from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import cross_val_score
 from sklearn import metrics
 
@@ -25,7 +26,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 
-# import impyute, fancyimpute, autoimpute, missingpy, datawig
+import impyute, fancyimpute, autoimpute, missingpy, datawig
 from fancyimpute import KNN
 
 # visualisation
@@ -38,9 +39,14 @@ sns.set_style("darkgrid", {"legend.frameon": True})
 
 
 def load_data():
-    iris = datasets.load_iris()
-    df = pd.DataFrame(iris.data, columns=iris.feature_names)
-    df["label"] = iris.target
+    data = datasets.load_iris()
+    # data = datasets.load_diabetes()
+    # data = datasets.load_digits()
+    df = pd.DataFrame(data.data)
+    if "feature_names" in data:
+        df.columns = data.feature_names
+
+    df["target"] = data.target
     # df["label_name"] = [iris.target_names[it] for it in iris.target]
     return df.iloc[:, :-1], df.iloc[:, -1]
 
@@ -96,6 +102,9 @@ def delete_datapoints(X, columns=None, frac=0.1):
 
     if columns is None:
         columns = _X.columns
+
+    if isinstance(columns, str):
+        columns = [columns]
 
     for col in columns:
         nan_idx = _X.sample(frac=frac).index
@@ -153,7 +162,7 @@ def experiment(
             ("zero", {}),
             # TODO: problem if user wants to try different knn (with different k)
             #  => store strategy and some indicator!
-            ("knn", {"fill_method": "mean", "k": 3}),
+            ("knn", {"k": 3}),
             ("mice", {}),
         ]
 
@@ -163,9 +172,7 @@ def experiment(
 
     # TODO: same split for all repetitions? or resplit?
     #  Better: use CV
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, stratify=y
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
 
     print("Evaluating different imputation methods w.r.t. model accuracy")
 
@@ -213,16 +220,12 @@ if __name__ == "__main__":
     print("Features:\n%s" % X)
     print("Labels:\n%s" % y)
 
-    print("Standardising features")
-    X = pd.DataFrame(pre_process(X, y), columns=X.columns)
-    print("Features:\n%s" % X)
-
     missing_fracs = np.linspace(0.0, 0.9, 10)
 
     results_df = experiment(
         X,
         y,
-        model=RandomForestClassifier(n_estimators=10, n_jobs=2),
+        model=RandomForestClassifier(n_estimators=100, n_jobs=3),
         metric=metrics.accuracy_score,
         reps=3,
         missing_fracs=missing_fracs,
