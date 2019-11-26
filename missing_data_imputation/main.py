@@ -146,7 +146,7 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
     if strategy == "datawig":
         _X = imputer.complete(_X)
     else:
-        X.loc[:, columns] = imputer.fit_transform(_X.loc[:, columns])
+        _X.loc[:, columns] = imputer.fit_transform(_X.loc[:, columns])
     return _X
 
 
