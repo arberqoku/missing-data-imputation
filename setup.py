@@ -7,7 +7,7 @@ setup(
     version="1.0.0",
     description="Methods and experiments for data imputation.",
     author=["Arber Qoku", "Alexander Hanf"],
-    author_email=["arber.qoku@campus.lmu.de", ""],
+    author_email=["arber.qoku@campus.lmu.de", "a.hanf@campus.lmu.de"],
     url="https://github.com/arberqoku/missing-data-imputation",
     packages=find_packages(),
     install_requires=[
