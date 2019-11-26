@@ -16,7 +16,6 @@ from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import cross_val_score
 from sklearn import metrics
 
@@ -28,6 +27,7 @@ from sklearn.impute import IterativeImputer
 
 import impyute, fancyimpute, autoimpute, missingpy, datawig
 from fancyimpute import KNN
+from datawig import SimpleImputer as DWSimpleImputer
 
 # visualisation
 from matplotlib import pyplot as plt
@@ -135,14 +135,18 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
         "mice": lambda: IterativeImputer(
             max_iter=10, sample_posterior=True, **strategy_kwargs
         ),
+        "datawig": lambda: DWSimpleImputer
     }
 
     if columns is None:
         columns = _X.columns
 
     imputer = strategy_dict[strategy]()
-    _X.loc[:, columns] = imputer.fit_transform(_X.loc[:, columns])
 
+    if strategy == "datawig":
+        _X = imputer.complete(_X)
+    else:
+        X.loc[:, columns] = imputer.fit_transform(_X.loc[:, columns])
     return _X
 
 
@@ -164,6 +168,7 @@ def experiment(
             #  => store strategy and some indicator!
             ("knn", {"k": 3}),
             ("mice", {}),
+            ("datawig", {})
         ]
 
     results = {"exp_rep": [], "missing_frac": [], "strategy": [], "metric_score": []}
@@ -183,17 +188,17 @@ def experiment(
                 "\n========== Missing percentage %s%% =========="
                 % int(missing_frac * 100)
             )
+            X_train_miss = delete_datapoints(X_train, frac=missing_frac)
             for (impute_strategy, impute_param) in impute_params:
                 print("========== Imputation strategy %s ==========" % impute_strategy)
-
-                X_train_miss = delete_datapoints(X_train, frac=missing_frac)
-                X_train_imputed = impute_data(
-                    X_train_miss, strategy=impute_strategy, **impute_param
-                )
-                y_train_imputed = y_train.loc[X_train_imputed.index]
-
-                # print("Retrain model on imputed data")
                 try:
+                    X_train_imputed = impute_data(
+                        X_train_miss, strategy=impute_strategy, **impute_param
+                    )
+                    print(X_train_imputed.dropna().shape)
+                    y_train_imputed = y_train.loc[X_train_imputed.index]
+
+                    # print("Retrain model on imputed data")
                     model.fit(X_train_imputed, y_train_imputed)
                     # make use of metric
                     y_pred = model.predict(X_test)
