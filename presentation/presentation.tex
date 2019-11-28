@@ -1,0 +1,184 @@
+\documentclass[aspectratio=43]{beamer}
+
+\usetheme[progressbar=frametitle]{metropolis}
+\usepackage{appendixnumberbeamer}
+
+
+\usepackage{amsmath}
+\usepackage{mathtools}
+
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\algnewcommand\algorithmicforeach{\textbf{for each}}
+\algdef{S}[FOR]{ForEach}[1]{\algorithmicforeach\ #1\ \algorithmicdo}
+
+\newcommand*\Let[2]{\State #1 $\gets$ #2}
+\algrenewcommand\alglinenumber[1]{
+    {\sf\footnotesize\addfontfeatures{Colour=888888,Numbers=Monospaced}#1}}
+\algrenewcommand\algorithmicrequire{\textbf{Input:}}
+\algrenewcommand\algorithmicensure{\textbf{Initialise:}}
+
+\newcommand{\HRule}[1]{\rule{\linewidth}{#1}}
+\newcommand{\algrule}[1][.2pt]{\par\vskip.5\baselineskip\hrule height #1\par\vskip.5\baselineskip}
+
+\usepackage{transparent}
+\usepackage{pdfpages}
+
+\usepackage{array}
+\usepackage{booktabs}
+
+\usepackage{multicol}
+\usepackage{vwcol}
+\usepackage{wrapfig}
+\usepackage[export]{adjustbox}
+
+
+\usepackage{tikz}
+\usetikzlibrary{matrix,chains,positioning,decorations.pathreplacing,arrows}
+\usetikzlibrary{positioning,calc}
+
+
+\usepackage{tikz-qtree,tikz-qtree-compat}
+\usetikzlibrary{arrows,positioning,calc, chains, decorations.pathreplacing} 
+\tikzset{
+    %Define standard arrow tip
+    >=stealth',
+    %Define style for boxes
+    punkt/.style={
+           rectangle,
+           rounded corners,
+           draw=black, very thick,
+           text width=6.5em,
+           minimum height=2em,
+           text centered},
+    % Define arrow style
+    pil/.style={
+           ->,
+           thick,
+           shorten <=2pt,
+           shorten >=2pt},
+    traj/.style={
+           very thick,
+           red},
+    statenode/.style={
+    circle,
+    draw=black,
+    fill=white,
+    inner sep=0pt,
+    text width=3mm},
+    actionnode/.style={
+    circle,
+    fill=black,
+    inner sep=0pt,
+    text width=2mm},
+    terminalnode/.style={
+    rectangle,
+    draw=black,
+    text centered},
+    every neuron/.style={
+    circle,
+    draw,
+    minimum size=1cm
+  },
+  neuron missing/.style={
+    draw=none, 
+    scale=4,
+    text height=0.333cm,
+    execute at begin node=\color{black}$\vdots$
+  }
+}
+\newcommand{\tikzcircle}[2][red,fill=red]{\tikz[baseline=-0.5ex]\draw[#1,radius=#2] (0,0) circle ;}%
+
+\usepackage{graphicx}
+
+
+  % declare the path(s) where your graphic files are
+\graphicspath{{media/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+\DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+
+\usepackage[utf8]{inputenc}
+
+\usepackage[font=small,labelfont=bf]{caption}
+
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\tikzset{%
+  every neuron/.style={
+    circle,
+    draw,
+    minimum size=1cm
+  },
+  neuron missing/.style={
+    draw=none, 
+    scale=4,
+    text height=0.333cm,
+    execute at begin node=\color{black}$\vdots$
+  },
+}
+
+\DeclareCaptionFont{tiny}{\tiny}
+
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+
+%\setbeamercolor{background canvas}{bg=white}
+
+\usebackgroundtemplate%
+{%
+    \includegraphics[width=\paperwidth,height=\paperheight]{lmu_background}%
+}
+
+\newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
+
+\newcommand{\backupbegin}{
+   \newcounter{finalframe}
+   \setcounter{finalframe}{\value{framenumber}}
+}
+\newcommand{\backupend}{
+   \setcounter{framenumber}{\value{finalframe}}
+}
+
+\title{Missing Data Imputation}
+\date{insert date}
+\author{Alexander Hanf, Arber Qoku}
+
+\begin{document}
+%
+\maketitle
+
+\begin{frame}{Agenda}
+\tableofcontents
+\end{frame}
+
+\section{section 1}
+\begin{frame}{frame 1}
+\begin{itemize}
+\item A
+\item B
+\end{itemize}
+\end{frame}
+
+
+\section{section 2}
+
+\begin{frame}{frame 2}
+\begin{itemize}
+\item A
+\item B
+\end{itemize}
+\end{frame}
+
+\appendix
+\section{Backup}
+
+\begin{frame}{backup 1}
+\scriptsize
+test
+\normalsize
+\end{frame}
+
+\end{document}
