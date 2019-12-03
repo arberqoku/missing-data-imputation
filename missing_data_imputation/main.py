@@ -16,6 +16,7 @@ from sklearn import datasets
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import cross_val_score
 from sklearn import metrics
 
@@ -37,6 +38,12 @@ import seaborn as sns
 sns.set_context("talk")
 sns.set_style("darkgrid", {"legend.frameon": True})
 
+try:
+    # inside try to be able to easily run stuff on ipython as well
+    BASE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..")
+except NameError:
+    BASE_DIR = "."
+
 
 def load_data():
     data = datasets.load_iris()
@@ -48,6 +55,17 @@ def load_data():
 
     df["target"] = data.target
     # df["label_name"] = [iris.target_names[it] for it in iris.target]
+    return df.iloc[:, :-1], df.iloc[:, -1]
+
+def load_wine():
+    df = pd.read_csv(os.path.join(BASE_DIR, 'data', 'winequality-white.csv'), sep=';')
+    return df.iloc[:, :-1], df.iloc[:, -1]
+
+def load_breast_cancer():
+    data = datasets.load_breast_cancer()
+    df = pd.DataFrame(data.data)
+    df.columns = data.feature_names
+    df["target"] = data.target
     return df.iloc[:, :-1], df.iloc[:, -1]
 
 
@@ -222,7 +240,6 @@ def experiment(
                     X_train_imputed = impute_data(
                         X_train_miss, strategy=impute_strategy, **impute_param
                     )
-                    print(X_train_imputed.dropna().shape)
                     y_train_imputed = y_train.loc[X_train_imputed.index]
 
                     # print("Retrain model on imputed data")
@@ -248,17 +265,19 @@ def experiment(
 
 if __name__ == "__main__":
     print("Load data")
-    X, y = load_data()
+    X, y = load_breast_cancer()
     print("Features:\n%s" % X)
-    print("Labels:\n%s" % y)
+    print("Targets:\n%s" % y)
 
+    model = RandomForestClassifier(n_estimators=100, n_jobs=3)
+    metric = metrics.accuracy_score
     missing_fracs = np.linspace(0.0, 0.9, 10)
 
     results_df = experiment(
         X,
         y,
-        model=RandomForestClassifier(n_estimators=100, n_jobs=3),
-        metric=metrics.accuracy_score,
+        model=model,
+        metric=metric,
         reps=3,
         missing_fracs=missing_fracs,
         # missingness="mar"
