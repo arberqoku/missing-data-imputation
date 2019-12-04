@@ -63,8 +63,62 @@ def load_data():
     return df.iloc[:, :-1], df.iloc[:, -1]
 
 
+def load_census():
+
+    CAT = "category"
+    CONT = np.float32
+
+    col_names = [
+        "age",
+        "workclass",
+        "fnlwgt",
+        "education",
+        "education-num",
+        "marital",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week",
+        "native-country",
+        ">50k",
+    ]
+
+    dtypes = [
+        np.int16,
+        CAT,
+        CONT,
+        CAT,
+        CONT,
+        CAT,
+        CAT,
+        CAT,
+        CAT,
+        CAT,
+        CONT,
+        CONT,
+        CONT,
+        CAT,
+        CAT,
+    ]
+    df = pd.read_csv(
+        os.path.join(BASE_DIR, "data", "adult.data"),
+        sep=",",
+        names=col_names,
+        dtype={k: v for (k, v) in zip(col_names, dtypes)},
+    )
+
+    df = df.sample(n=1000)
+
+    df = pd.get_dummies(df, drop_first=True)
+    return df.iloc[:, :-1], df.iloc[:, -1]
+    # return df
+
+
 def load_wine():
-    df = pd.read_csv(os.path.join(BASE_DIR, 'data', 'winequality-white.csv'), sep=';')
+    df = pd.read_csv(os.path.join(BASE_DIR, "data", "winequality-white.csv"), sep=";")
     return df.iloc[:, :-1], df.iloc[:, -1]
 
 
@@ -150,8 +204,8 @@ def delete_datapoints_mar(X, y, columns=None, frac=0.1):
 
     # set different fractions of missing data depending on the median of the response variable
     for col in columns:
-        nan_idx_1 = _X[y >= np.nanmedian(y)].sample(frac=max(frac-0.15, 0)).index
-        nan_idx_2 = _X[y < np.nanmedian(y)].sample(frac=min(frac+0.15, 1)).index
+        nan_idx_1 = _X[y >= np.nanmedian(y)].sample(frac=max(frac - 0.15, 0)).index
+        nan_idx_2 = _X[y < np.nanmedian(y)].sample(frac=min(frac + 0.15, 1)).index
         for indices in [nan_idx_1, nan_idx_2]:
             _X.loc[indices, col] = np.NaN
     return _X
@@ -179,7 +233,7 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
         "mice": lambda: IterativeImputer(
             max_iter=10, sample_posterior=True, **strategy_kwargs
         ),
-        "datawig": lambda: DWSimpleImputer
+        # "datawig": lambda: DWSimpleImputer
     }
 
     if columns is None:
@@ -195,7 +249,14 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
 
 
 def experiment(
-    X, y, model=None, metric=None, reps=3, missing_fracs=None, impute_params=None, missingness="mcar"
+    X,
+    y,
+    model=None,
+    metric=None,
+    reps=3,
+    missing_fracs=None,
+    impute_params=None,
+    missingness="mcar",
 ):
 
     if missing_fracs is None:
@@ -234,7 +295,9 @@ def experiment(
             )
             if missingness == "mar":
                 print("MAR setting")
-                X_train_miss = delete_datapoints_mar(X_train, y_train, frac=missing_frac)
+                X_train_miss = delete_datapoints_mar(
+                    X_train, y_train, frac=missing_frac
+                )
             else:
                 print("defaulting to MCAR setting")
                 X_train_miss = delete_datapoints(X_train, frac=missing_frac)
@@ -270,7 +333,7 @@ def experiment(
 
 def autotune():
     h2o.init()
-    df = h2o.import_file(os.path.join(BASE_DIR, 'data', 'winequality-white.csv'))
+    df = h2o.import_file(os.path.join(BASE_DIR, "data", "winequality-white.csv"))
     y = "quality"
     x = df.columns[0:3]
     aml = H2OAutoML(max_models=10, seed=1)
@@ -300,9 +363,9 @@ if __name__ == "__main__":
         y,
         model=model,
         metric=metric,
-        reps=3,
+        reps=1,
         missing_fracs=missing_fracs,
-        missingness="mar"
+        missingness="mar",
     )
 
     # show all results
