@@ -13,13 +13,18 @@ import pandas as pd
 # datasets/training/imputation
 import sklearn
 from sklearn import datasets
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn import metrics
 
+# autoML
+import h2o
+from h2o.automl import H2OAutoML
 
 # imputation
 from sklearn.impute import SimpleImputer
@@ -57,9 +62,11 @@ def load_data():
     # df["label_name"] = [iris.target_names[it] for it in iris.target]
     return df.iloc[:, :-1], df.iloc[:, -1]
 
+
 def load_wine():
     df = pd.read_csv(os.path.join(BASE_DIR, 'data', 'winequality-white.csv'), sep=';')
     return df.iloc[:, :-1], df.iloc[:, -1]
+
 
 def load_breast_cancer():
     data = datasets.load_breast_cancer()
@@ -143,12 +150,11 @@ def delete_datapoints_mar(X, y, columns=None, frac=0.1):
 
     # set different fractions of missing data depending on the median of the response variable
     for col in columns:
-        nan_idx_1 = _X[y >= np.nanmedian(y)].sample(frac=max(frac-0.05, 0)).index
-        nan_idx_2 = _X[y < np.nanmedian(y)].sample(frac=min(frac+0.05, 1)).index
+        nan_idx_1 = _X[y >= np.nanmedian(y)].sample(frac=max(frac-0.15, 0)).index
+        nan_idx_2 = _X[y < np.nanmedian(y)].sample(frac=min(frac+0.15, 1)).index
         for indices in [nan_idx_1, nan_idx_2]:
             _X.loc[indices, col] = np.NaN
     return _X
-
 
 
 def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
@@ -193,7 +199,7 @@ def experiment(
 ):
 
     if missing_fracs is None:
-        missing_fracs = np.linspace(0.0, 0.9, 10)
+        missing_fracs = np.linspace(0.0, 0.9, 5)
 
     if impute_params is None:
         impute_params = [
@@ -206,7 +212,7 @@ def experiment(
             #  => store strategy and some indicator!
             ("knn", {"k": 3}),
             ("mice", {}),
-            ("datawig", {})
+            # ("datawig", {})
         ]
 
     results = {"exp_rep": [], "missing_frac": [], "strategy": [], "metric_score": []}
@@ -232,7 +238,6 @@ def experiment(
             else:
                 print("defaulting to MCAR setting")
                 X_train_miss = delete_datapoints(X_train, frac=missing_frac)
-
 
             for (impute_strategy, impute_param) in impute_params:
                 print("========== Imputation strategy %s ==========" % impute_strategy)
@@ -263,13 +268,30 @@ def experiment(
     return pd.DataFrame(results)
 
 
+def autotune():
+    h2o.init()
+    df = h2o.import_file(os.path.join(BASE_DIR, 'data', 'winequality-white.csv'))
+    y = "quality"
+    x = df.columns[0:3]
+    aml = H2OAutoML(max_models=10, seed=1)
+    aml.train(x=x, y=y, training_frame=df)
+    h2o.save_model(aml.leader, path="./data/best_model")
+    print(aml.leader.actual_params)
+    model = RandomForestClassifier(n_estimators=40, max_depth=20, n_jobs=3)
+    h2o.cluster().shutdown()
+
+
 if __name__ == "__main__":
     print("Load data")
     X, y = load_breast_cancer()
+    # reduce number of covariates to make impact of missing data bigger -
+    # results seem somewhat consistent, even if picking other columns
+    X = X.iloc[:, 0:3]
     print("Features:\n%s" % X)
     print("Targets:\n%s" % y)
 
-    model = RandomForestClassifier(n_estimators=100, n_jobs=3)
+    model = GaussianNB()
+    # model = RandomForestClassifier(n_estimators=100, n_jobs=3)
     metric = metrics.accuracy_score
     missing_fracs = np.linspace(0.0, 0.9, 10)
 
@@ -280,7 +302,7 @@ if __name__ == "__main__":
         metric=metric,
         reps=3,
         missing_fracs=missing_fracs,
-        # missingness="mar"
+        missingness="mar"
     )
 
     # show all results
