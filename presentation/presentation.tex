@@ -6,6 +6,7 @@
 
 \usepackage{amsmath}
 \usepackage{mathtools}
+\usepackage{xcolor}
 
 \usepackage{transparent}
 \usepackage{pdfpages}
@@ -57,7 +58,7 @@
 }
 
 \title{Missing Data Imputation}
-\date{11. 12. 2019}
+\date{11.12.2019}
 \author{Alexander Hanf, Arber Qoku}
 
 \begin{document}
@@ -118,8 +119,80 @@ Go into details about how imputation effects different models?
 \begin{frame}{Hot-Deck Imputation}
 \end{frame}
 
-\begin{frame}{MICE}
-Big part of presentation: explain MICE in detail
+
+\begin{frame}{Multiple Imputation}
+Main idea: use given data to quantify uncertainty of imputations
+\phantom{This text will be invisible} \\
+\centering
+\includegraphics[width=0.9\paperwidth]{MI}
+\end{frame}
+
+\begin{frame}{Specification Overhead}
+\begin{itemize}
+\item Missingness pattern: MCAR, MAR, MNAR
+\item Imputation model: linear regression, random forest, ...
+\item Predictor vs response variables: leave-one-out, interactions, auxiliary, ...
+\item Order of variable imputation: random, least/most missing first, ...
+\item Initial imputations, number of iterations (convergence condition)
+\item Number of multiply imputed datasets (cycles)
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Multiple Imputation by Chained Equations (MICE)}
+$$X = \underbrace{\begin{pmatrix}
+x_{11} 	& - 		& x_{13} \\
+x_{21} 	& x_{22} 	& - \\
+- 		& x_{32} 	& - \\
+x_{41} 	& x_{42} 	& x_{43} \\
+\end{pmatrix}}_\text{original design matrix}
+\rightarrow
+\underbrace{\begin{pmatrix}
+x_{11} 		& \textcolor{red}{\bar{x}_{.2}} 	& x_{13} \\
+x_{21} 		& x_{22} 		& \textcolor{red}{\bar{x}_{.3}} \\
+\textcolor{red}{\bar{x}_{.1}} & x_{32} 	& \textcolor{red}{\bar{x}_{.3}} \\
+x_{41} 		& x_{42} 	& x_{43} \\
+\end{pmatrix}}_\text{initial imputation}
+\rightarrow
+\underbrace{\begin{pmatrix}
+\textcolor{red}{\bar{x}_{.2}} 	& x_{13} \\
+x_{22} 		& \textcolor{red}{\bar{x}_{.3}} \\
+x_{42} 	& x_{43} \\
+\end{pmatrix}}_\text{design matrix},
+\underbrace{\begin{pmatrix}
+x_{11} \\
+x_{21} \\
+x_{41} \\
+\end{pmatrix}}_\text{response}$$
+
+$$
+\rightarrow
+\begin{pmatrix}
+x_{11} 		& \textcolor{red}{\bar{x}_{.2}} 	& x_{13} \\
+x_{21} 		& x_{22} 		& \textcolor{red}{\bar{x}_{.3}} \\
+\textcolor{blue}{\hat{x}_{31}} & x_{32} 	& \textcolor{red}{\bar{x}_{.3}} \\
+x_{41} 		& x_{42} 	& x_{43} \\
+\end{pmatrix}
+\rightarrow
+\begin{pmatrix}
+x_{21} 		& \textcolor{red}{\bar{x}_{.3}} \\
+\textcolor{blue}{\hat{x}_{31}} & \textcolor{red}{\bar{x}_{.3}} \\
+x_{41} 		& x_{43} \\
+\end{pmatrix},
+\begin{pmatrix}
+x_{22} \\
+x_{32} \\
+x_{42} \\
+\end{pmatrix}
+\rightarrow
+\cdots
+\underbrace{\begin{pmatrix}
+x_{11} 		& \textcolor{blue}{\hat{x}_{12}} 	& x_{13} \\
+x_{21} 		& x_{22} 		& \textcolor{blue}{\hat{x}_{23}} \\
+\textcolor{blue}{\hat{x}_{31}} & x_{32} 	& \textcolor{blue}{\hat{x}_{33}} \\
+x_{41} 		& x_{42} 	& x_{43} \\
+\end{pmatrix}}_{X_i^{*}}
+$$
+
 \end{frame}
 
 \begin{frame}{Deep Learning for Imputation}
