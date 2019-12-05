@@ -46,6 +46,8 @@
 {%
     \includegraphics[width=\paperwidth,height=\paperheight]{lmu_background}%
 }
+\newcommand\pro{\item[$+$]}
+\newcommand\con{\item[$-$]}
 
 \newcommand{\themename}{\textbf{\textsc{metropolis}}\xspace}
 
@@ -73,9 +75,24 @@
 
 \begin{frame}{Missing data}
 \begin{itemize}
-\item Missing data is very common in practical problems
-\item Data can be missing for many reasons (give some examples)
-\item Many machine learning models can not handle missing data. What to do?
+\item Very common in practical problems
+\item Data can be missing for many reasons
+\begin{itemize}
+\item Survey participant is unreachable or refuses to answer
+\item Question does not apply to patient (sex-specific)
+\item Subset of sensors not working for a period of time
+\item Missing by design
+\end{itemize}
+\item Complicates statistical analysis (bias, statistical power, ...)
+\item Many machine learning models can not handle missing data.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Types of missing data}
+\begin{itemize}
+\item Missing completely at random (MCAR): the pattern of missing values is independent of all other covariates (both observed and unobserved)
+\item Missing at random (MAR): the pattern of missing values depends only on observed covariates
+\item Missing not at random (MNAR): the pattern of missing values also depends on unobserved covariates
 \end{itemize}
 \end{frame}
 
@@ -83,16 +100,7 @@
 \begin{itemize}
 \item Use statistical techniques to fill in the missing values
 \item Make the most of the data we have
-\item Caution is required (give some examples of nonsensical imputations, i.e. pregnant men in clinical data)
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Types of missing data}
-\begin{itemize}
-\item Missing completely at random: the pattern of missing values is independent of all other covariates (both observed and unobserved)
-\item Missing at random: the pattern of missing values depends only on observed covariates
-\item Missing not at random: the pattern of missing values also depends on unobserved covariates
+\item Caution is required (give some examples of nonsensical imputations, i.e. negative age, pregnant men in clinical data)
 \end{itemize}
 \end{frame}
 
@@ -101,18 +109,33 @@
 
 \begin{frame}{Complete case analysis}
 \begin{itemize}
-\item Explanation goes here
+\item Row-wise or column-wise deletion
 \end{itemize}
-Quick remark about when analysis is unbiased (SRAI)
+\begin{itemize}
+\pro Very simple
+\pro Valid inferences when MCAR
+\end{itemize}
+\begin{itemize}
+\con Biased results on MAR or MNAR
+\con Too few datapoints (if any) left!\\
+If only $5\%$ missing independently on a dataset with 20 columns, we end up with $0.95^{20} \approx 35\%$ of the original data\\
+\end{itemize}
+\textcolor{red}{Big problem in predictive modelling!}
 \end{frame}
 
 \begin{frame}{Imputation of constant values}
-Go into details about how imputation effects different models?
 \begin{itemize}
-\item Mean
-\item Mode
-\item Median
-\item Constant value
+\item Substitute mean, median, mode, constant value
+\end{itemize}
+\begin{itemize}
+\pro Simple
+\pro Retains all observed values
+\pro Can preserve statistical quantities
+\end{itemize}
+\begin{itemize}
+\con Underestimates standard errors
+\con May impute unrealistic values
+\con May impute outliers (zero imputation)
 \end{itemize}
 \end{frame}
 
