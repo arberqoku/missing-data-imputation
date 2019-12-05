@@ -1,25 +1,17 @@
 """Sandbox for notebook"""
 # base imports
 import os
-import time
-
-# exploratory data analysis
-import missingno, pandas_profiling
 
 # data processing
 import numpy as np
 import pandas as pd
 
 # datasets/training/imputation
-import sklearn
 from sklearn import datasets
 from sklearn.naive_bayes import GaussianNB
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import cross_val_score
 from sklearn import metrics
 
 # autoML
@@ -128,51 +120,6 @@ def load_breast_cancer():
     df.columns = data.feature_names
     df["target"] = data.target
     return df.iloc[:, :-1], df.iloc[:, -1]
-
-
-# generate exploratory data analysis report as html file?
-def eda_report():
-    pass
-
-
-# maybe scale data
-def pre_process(X, y):
-    scaler = StandardScaler()
-    return scaler.fit_transform(X, y)
-
-
-def evaluate():
-    pass
-
-
-def compare_models():
-    pass
-
-
-def feature_col_vs_metric_score(
-    results_df,
-    feature_col="missing_frac",
-    metric_score="metric_score",
-    group_col="strategy",
-):
-    """
-    How does each model perform based on a single feature (averaged across other relevant features) wrt a metric score
-    :param group_col:
-    :param results_df:
-    :param feature_col:
-    :param metric_score:
-    :return:
-    """
-    # TODO: show white background for legend
-    return sns.lineplot(
-        x=feature_col,
-        y=metric_score,
-        hue=group_col,
-        style=group_col,
-        markers=True,
-        dashes=False,
-        data=results_df,
-    )
 
 
 # introduce missingness - missing completely at random
@@ -342,6 +289,32 @@ def autotune():
     print(aml.leader.actual_params)
     model = RandomForestClassifier(n_estimators=40, max_depth=20, n_jobs=3)
     h2o.cluster().shutdown()
+
+
+def feature_col_vs_metric_score(
+    results_df,
+    feature_col="missing_frac",
+    metric_score="metric_score",
+    group_col="strategy",
+):
+    """
+    How does each model perform based on a single feature (averaged across other relevant features) wrt a metric score
+    :param group_col:
+    :param results_df:
+    :param feature_col:
+    :param metric_score:
+    :return:
+    """
+    # TODO: show white background for legend
+    return sns.lineplot(
+        x=feature_col,
+        y=metric_score,
+        hue=group_col,
+        style=group_col,
+        markers=True,
+        dashes=False,
+        data=results_df,
+    )
 
 
 if __name__ == "__main__":
