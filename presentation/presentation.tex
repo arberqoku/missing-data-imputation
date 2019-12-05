@@ -11,6 +11,14 @@
 \usepackage{transparent}
 \usepackage{pdfpages}
 
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
 \usepackage{array}
 \usepackage{booktabs}
 
@@ -232,7 +240,7 @@ x_{21} 		& x_{22} 		& \textcolor{blue}{\hat{x}_{23}} \\
 x_{41} 		& x_{42} 	& x_{43} \\
 \end{pmatrix}}_{X_i^{*}}
 $$
-
+\onslide<2>\textcolor{red}{Do we actually need multiple datasets in predictive modelling?}
 \end{frame}
 
 \begin{frame}{Deep Learning for Imputation}
@@ -246,7 +254,22 @@ Maybe explain this in detail as well? Depending on how complicated it is
 \end{frame}
 
 \begin{frame}{Useful libraries}
+Exploratory data analysis
+\begin{itemize}
+\item General purpose: \href{https://github.com/pandas-profiling/pandas-profiling}{pandas-profiling}
+\item Specific to missing data: \href{https://github.com/ResidentMario/missingno}{missingno}
+\end{itemize}
+Imputation
+\begin{itemize}
+\item General purpose ($\sim$\href{https://cran.r-project.org/web/packages/mice/mice.pdf}{\texttt{ mice}} in R): \href{https://scikit-learn.org/stable/modules/impute.html}{scikit-learn}
+\item KNN: \href{https://github.com/iskandr/fancyimpute}{fancyimpute}
+\item Random Forest ($\sim$\href{https://cran.r-project.org/web/packages/missForest/missForest.pdf}{\texttt{ missForest}} in R): \href{https://github.com/epsilon-machine/missingpy}{missingpy}
+\item Imputation of Time Series Data (WIP): \href{https://github.com/eltonlaw/impyute}{impyute}
+\end{itemize}
 \end{frame}
+
+
+
 
 \section{Live Demo}
 
