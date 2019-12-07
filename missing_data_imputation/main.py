@@ -23,11 +23,14 @@ from sklearn.impute import SimpleImputer
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 
-import impyute, fancyimpute, autoimpute, missingpy, datawig
+# import impyute, fancyimpute, autoimpute, missingpy, datawig
 from fancyimpute import KNN
-from datawig import SimpleImputer as DWSimpleImputer
+from missingpy import MissForest
+
+# from datawig import SimpleImputer as DWSimpleImputer
 
 # visualisation
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 import seaborn as sns
 
@@ -42,21 +45,30 @@ except NameError:
     BASE_DIR = "."
 
 
-def load_data():
-    data = datasets.load_iris()
-    # data = datasets.load_diabetes()
-    # data = datasets.load_digits()
+def load_data(dataset="breast_cancer"):
+    data_dict = {
+        "iris": lambda: datasets.load_iris(),
+        "diabetes": lambda: datasets.load_diabetes(),
+        "digits": lambda: datasets.load_digits(),
+        "breast_cancer": lambda: datasets.load_breast_cancer(),
+    }
+
+    data = data_dict[dataset]()
     df = pd.DataFrame(data.data)
     if "feature_names" in data:
         df.columns = data.feature_names
 
     df["target"] = data.target
-    # df["label_name"] = [iris.target_names[it] for it in iris.target]
+    return df.iloc[:, :-1], df.iloc[:, -1]
+
+
+def load_wine():
+    df = pd.read_csv(os.path.join(BASE_DIR, "data", "winequality-white.csv"), sep=";")
+    # df = pd.read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", sep=";")
     return df.iloc[:, :-1], df.iloc[:, -1]
 
 
 def load_census():
-
     CAT = "category"
     CONT = np.float32
 
@@ -65,16 +77,16 @@ def load_census():
         "workclass",
         "fnlwgt",
         "education",
-        "education-num",
+        "education_num",
         "marital",
         "occupation",
         "relationship",
         "race",
         "sex",
-        "capital-gain",
-        "capital-loss",
-        "hours-per-week",
-        "native-country",
+        "capital_gain",
+        "capital_loss",
+        "hours_per_week",
+        "native_country",
         ">50k",
     ]
 
@@ -97,34 +109,19 @@ def load_census():
     ]
     df = pd.read_csv(
         os.path.join(BASE_DIR, "data", "adult.data"),
+        # "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data",
         sep=",",
         names=col_names,
         dtype={k: v for (k, v) in zip(col_names, dtypes)},
     )
 
-    df = df.sample(n=1000)
-
-    df = pd.get_dummies(df, drop_first=True)
-    return df.iloc[:, :-1], df.iloc[:, -1]
-    # return df
-
-
-def load_wine():
-    df = pd.read_csv(os.path.join(BASE_DIR, "data", "winequality-white.csv"), sep=";")
-    return df.iloc[:, :-1], df.iloc[:, -1]
-
-
-def load_breast_cancer():
-    data = datasets.load_breast_cancer()
-    df = pd.DataFrame(data.data)
-    df.columns = data.feature_names
-    df["target"] = data.target
     return df.iloc[:, :-1], df.iloc[:, -1]
 
 
 # introduce missingness - missing completely at random
-def delete_datapoints(X, columns=None, frac=0.1):
+def delete_datapoints(X, y, columns=None, frac=0.1, missingness="mcar"):
     _X = X.copy(deep=True)
+    _y = y.copy(deep=True)
 
     if columns is None:
         columns = _X.columns
@@ -132,38 +129,36 @@ def delete_datapoints(X, columns=None, frac=0.1):
     if isinstance(columns, str):
         columns = [columns]
 
-    for col in columns:
-        nan_idx = _X.sample(frac=frac).index
-        _X.loc[nan_idx, col] = np.NaN
-
-    return _X
-
-
-# introduce missingness - missing at random
-def delete_datapoints_mar(X, y, columns=None, frac=0.1):
-    _X = X.copy(deep=True)
-
-    if columns is None:
-        columns = _X.columns
-
-    if isinstance(columns, str):
-        columns = [columns]
-
-    # set different fractions of missing data depending on the median of the response variable
-    for col in columns:
-        nan_idx_1 = _X[y >= np.nanmedian(y)].sample(frac=max(frac - 0.15, 0)).index
-        nan_idx_2 = _X[y < np.nanmedian(y)].sample(frac=min(frac + 0.15, 1)).index
-        for indices in [nan_idx_1, nan_idx_2]:
+    if missingness == "mcar":
+        for col in columns:
+            nan_idx = _X.sample(frac=frac).index
+            _X.loc[nan_idx, col] = np.NaN
+    else:
+        # set different fractions of missing data depending on the median of the response variable
+        # _X.index = _y.index
+        for col in columns:
+            nan_idx_1 = (
+                _X[y >= np.nanmedian(y)]
+                .sample(frac=max(frac - 0.15, 0))
+                .index.to_list()
+            )
+            nan_idx_2 = (
+                _X[y < np.nanmedian(y)].sample(frac=min(frac + 0.15, 1)).index.to_list()
+            )
+            indices = nan_idx_1 + nan_idx_2
             _X.loc[indices, col] = np.NaN
+
     return _X
 
 
 def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
     _X = X.copy(deep=True)
 
-    # TODO: complete case is no imputation strategy...
+    # complete case is not really an imputation strategy...
     if strategy == "complete_case":
         return _X.dropna()
+
+    cat_vars = strategy_kwargs.pop("cat_vars", None)
 
     strategy_dict = {
         # use lambda to avoid premature initialisation
@@ -180,6 +175,7 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
         "mice": lambda: IterativeImputer(
             max_iter=10, sample_posterior=True, **strategy_kwargs
         ),
+        "miss-forest": lambda: MissForest(max_iter=10, **strategy_kwargs),
         # "datawig": lambda: DWSimpleImputer
     }
 
@@ -190,6 +186,9 @@ def impute_data(X, columns=None, strategy="mean", **strategy_kwargs):
 
     if strategy == "datawig":
         _X = imputer.complete(_X)
+    elif strategy == "miss-forest":
+        imputer.fit(_X.loc[:, columns], cat_vars=cat_vars)
+        _X.loc[:, columns] = imputer.transform(_X)
     else:
         _X.loc[:, columns] = imputer.fit_transform(_X.loc[:, columns])
     return _X
@@ -216,41 +215,34 @@ def experiment(
             ("median", {}),
             ("most_frequent", {}),
             ("zero", {}),
-            # TODO: problem if user wants to try different knn (with different k)
-            #  => store strategy and some indicator!
-            ("knn", {"k": 3}),
+            ("knn", {"k": 3, "verbose": False}),
             ("mice", {}),
+            # ("miss-forest", {"n_estimators": 100}),
             # ("datawig", {})
         ]
 
     results = {"exp_rep": [], "missing_frac": [], "strategy": [], "metric_score": []}
 
-    print("Split into train and validation set")
+    # print("Split into train and validation set")
 
-    # TODO: same split for all repetitions? or resplit?
-    #  Better: use CV
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
 
-    print("Evaluating different imputation methods w.r.t. model accuracy")
+    # print("Evaluating different imputation methods w.r.t. model accuracy")
 
     for rep in range(reps):
-        print("\n\n========== Experiment instance %s ==========" % rep)
-        for missing_frac in missing_fracs:
-            print(
-                "\n========== Missing percentage %s%% =========="
-                % int(missing_frac * 100)
+        # print("\n\n========== Experiment instance %s ==========" % rep)
+        for missing_frac in tqdm(missing_fracs):
+            # print(
+            #     "\n========== Missing percentage %s%% =========="
+            #     % int(missing_frac * 100)
+            # )
+            # print("Introducing %s missingness" %(missingness))
+            X_train_miss = delete_datapoints(
+                X_train, y_train, frac=missing_frac, missingness=missingness
             )
-            if missingness == "mar":
-                print("MAR setting")
-                X_train_miss = delete_datapoints_mar(
-                    X_train, y_train, frac=missing_frac
-                )
-            else:
-                print("defaulting to MCAR setting")
-                X_train_miss = delete_datapoints(X_train, frac=missing_frac)
 
             for (impute_strategy, impute_param) in impute_params:
-                print("========== Imputation strategy %s ==========" % impute_strategy)
+                # print("========== Imputation strategy %s ==========" % impute_strategy)
                 try:
                     X_train_imputed = impute_data(
                         X_train_miss, strategy=impute_strategy, **impute_param
@@ -263,10 +255,10 @@ def experiment(
                     y_pred = model.predict(X_test)
                     metric_score = metric(y_test, y_pred)
                 except ValueError as e:
-                    print(
-                        "Could not train model or compute accuracy. Continue to next training instance."
-                    )
-                    print(e)
+                    # print(
+                    #     "Could not train model or compute accuracy. Continue to next training instance."
+                    # )
+                    # print(e)
                     continue
                 # print("Metric score: %s" % metric_score)
 
@@ -278,17 +270,16 @@ def experiment(
     return pd.DataFrame(results)
 
 
-def autotune():
+def autotune(df):
     h2o.init()
-    df = h2o.import_file(os.path.join(BASE_DIR, "data", "winequality-white.csv"))
-    y = "quality"
-    x = df.columns[0:3]
+    hf = h2o.H2OFrame(df)
+    x = hf.columns[:-1]
+    y = hf.columns[-1]
     aml = H2OAutoML(max_models=10, seed=1)
-    aml.train(x=x, y=y, training_frame=df)
-    h2o.save_model(aml.leader, path="./data/best_model")
-    print(aml.leader.actual_params)
-    model = RandomForestClassifier(n_estimators=40, max_depth=20, n_jobs=3)
-    h2o.cluster().shutdown()
+    aml.train(x=x, y=y, training_frame=hf)
+    # h2o.save_model(aml.leader, path="./data/best_model")
+    # print(aml.leader.actual_params)
+    return aml
 
 
 def feature_col_vs_metric_score(
@@ -319,15 +310,21 @@ def feature_col_vs_metric_score(
 
 if __name__ == "__main__":
     print("Load data")
-    X, y = load_breast_cancer()
+    X, y = load_census()
     # reduce number of covariates to make impact of missing data bigger -
     # results seem somewhat consistent, even if picking other columns
     X = X.iloc[:, 0:3]
+    y = y.cat.codes
+    X = pd.get_dummies(X, drop_first=True)
     print("Features:\n%s" % X)
     print("Targets:\n%s" % y)
 
-    model = GaussianNB()
-    # model = RandomForestClassifier(n_estimators=100, n_jobs=3)
+    # aml = autotune(pd.concat([X, y], axis=1, sort=False))
+    # h2o.cluster().shutdown()
+
+    # model = GaussianNB()
+    # model = KNeighborsClassifier(n_neighbors=5, n_jobs=3)
+    model = RandomForestClassifier(n_estimators=100, n_jobs=3)
     metric = metrics.accuracy_score
     missing_fracs = np.linspace(0.0, 0.9, 10)
 
