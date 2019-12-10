@@ -159,6 +159,7 @@ If only $5\%$ missing independently on a dataset with 20 columns, we end up with
 \end{itemize}
 \begin{itemize}
 	\pro Easy to implement and computationally efficient
+	\pro Imputations are realistic
 \end{itemize}
 \begin{itemize}
 	\con Donor values might get reused often
@@ -168,7 +169,9 @@ If only $5\%$ missing independently on a dataset with 20 columns, we end up with
 
 
 \begin{frame}{Multiple Imputation}
-Main idea: use given data to quantify uncertainty of imputations
+\begin{itemize}
+\item Use given data to quantify uncertainty of imputations
+\end{itemize}
 \phantom{This text will be invisible} \\
 \centering
 \includegraphics[width=0.9\paperwidth]{MI}
@@ -176,7 +179,7 @@ Main idea: use given data to quantify uncertainty of imputations
 
 \begin{frame}{Specification Overhead}
 \begin{itemize}
-\item Missingness pattern: MCAR, MAR, MNAR
+%\item Missingness pattern: MCAR, MAR, MNAR
 \item Imputation model: linear regression, random forest, ...
 \item Predictor vs response variables: leave-one-out, interactions, auxiliary, ...
 \item Order of variable imputation: random, least/most missing first, ...

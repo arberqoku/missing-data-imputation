@@ -11,11 +11,7 @@ setup(
     url="https://github.com/arberqoku/missing-data-imputation",
     packages=find_packages(),
     install_requires=[
-        "autoimpute>=0.11.6",
-        "datawig>=0.1.10",
         "fancyimpute>=0.5.4",
-        "impyute>=0.0.8",
-        "missingno>= 0.4.2",
         "missingpy>= 0.2.0",
         "pandas>=0.25.3",
         "pandas-profiling>=2.3.0",
