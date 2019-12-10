@@ -103,7 +103,7 @@
 \end{itemize}
 \end{frame}
 
-\begin{frame}{Idea of imputation}
+\begin{frame}{Idea of Imputation}
 \begin{itemize}
 \item Use statistical techniques to fill in the missing values
 \item Make the most of the data we have
@@ -142,7 +142,6 @@ If only $5\%$ missing independently on a dataset with 20 columns, we end up with
 \begin{itemize}
 \con Underestimates standard errors
 \con May impute unrealistic values
-\con May impute outliers (zero imputation)
 \end{itemize}
 \end{frame}
 
@@ -157,9 +156,33 @@ If only $5\%$ missing independently on a dataset with 20 columns, we end up with
 		\item Predictive mean matching (Regression \& Distance)
 	\end{itemize}
 \end{itemize}
+$$X = \underbrace{\begin{pmatrix}
+	x_{11} 	& x_{12} 	& x_{13} \\
+	x_{21} 	& x_{22} 	& x_{23} \\
+	- 		& x_{32} 	& x_{33} \\
+	\end{pmatrix}}_\text{original design matrix}
+\rightarrow
+\underbrace{
+	\begin{pmatrix}
+	x_{12} 	& x_{13} \\
+	x_{22} 	& x_{23} \\
+	\end{pmatrix}
+}_\text{design matrix},
+\underbrace{\begin{pmatrix}
+	x_{11} \\
+	x_{21} \\
+	\end{pmatrix}}_\text{response}
+\rightarrow
+\underbrace{
+	\begin{pmatrix}
+	\textcolor{blue}{\hat{x}_{11}}		& x_{12} 	& x_{13} \\
+	\textcolor{blue}{\hat{x}_{21}} 		& x_{22} 		& x_{23} \\
+	\textcolor{blue}{\hat{x}_{31}} & x_{32} 	& x_{33} \\
+	\end{pmatrix}}_\text{compute distances}
+$$
+
 \begin{itemize}
 	\pro Easy to implement and computationally efficient
-	\pro Imputations are realistic
 \end{itemize}
 \begin{itemize}
 	\con Donor values might get reused often
@@ -167,12 +190,11 @@ If only $5\%$ missing independently on a dataset with 20 columns, we end up with
 \end{itemize}
 \end{frame}
 
-
 \begin{frame}{Multiple Imputation}
 \begin{itemize}
 \item Use given data to quantify uncertainty of imputations
 \end{itemize}
-\phantom{This text will be invisible} \\
+\phantom{This text will be invisible} 
 \centering
 \includegraphics[width=0.9\paperwidth]{MI}
 \end{frame}
