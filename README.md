@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 * Minimal requirements
-    * [Python 3.X (**64 bit**)](https://www.python.org/downloads/)
+    * [Python 3.X](https://www.python.org/downloads/)
     * [Python package manager (PIP)](https://pypi.org/project/pip/)
 * Recommended
     * [Conda](https://www.anaconda.com/distribution/) for python 3.7
