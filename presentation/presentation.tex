@@ -208,6 +208,8 @@ $$
 \item Initial imputations, number of iterations (convergence condition)
 \item Number of multiply imputed datasets (cycles)
 \end{itemize}
+\phantom{This text will be invisible invisible invisible invisible invisible invisible} 
+\onslide<2> $\Rightarrow$ Multiple Imputation by Chained Equations (MICE)
 \end{frame}
 
 \begin{frame}{Multiple Imputation by Chained Equations (MICE)}
@@ -264,7 +266,7 @@ x_{21} 		& x_{22} 		& \textcolor{blue}{\hat{x}_{23}} \\
 x_{41} 		& x_{42} 	& x_{43} \\
 \end{pmatrix}}_{X_i^{*}}
 $$
-\onslide<2>\textcolor{red}{Do we actually need multiple datasets in predictive modelling?}
+%\onslide<2>\textcolor{red}{Do we actually need multiple datasets in predictive modelling?}
 \end{frame}
 
 \begin{frame}{Deep Learning for Imputation}
@@ -292,7 +294,7 @@ Exploratory data analysis
 Imputation
 \begin{itemize}
 \item General purpose ($\sim$\href{https://cran.r-project.org/web/packages/mice/mice.pdf}{\texttt{ mice}} in R): \href{https://scikit-learn.org/stable/modules/impute.html}{scikit-learn}
-\item KNN: \href{https://github.com/iskandr/fancyimpute}{fancyimpute}
+\item Hot-deck with KNNs: \href{https://github.com/iskandr/fancyimpute}{fancyimpute}
 \item Random Forest ($\sim$\href{https://cran.r-project.org/web/packages/missForest/missForest.pdf}{\texttt{ missForest}} in R): \href{https://github.com/epsilon-machine/missingpy}{missingpy}
 \item Imputation of Time Series Data (WIP): \href{https://github.com/eltonlaw/impyute}{impyute}
 \end{itemize}
